@@ -7,13 +7,17 @@ from transformers import (
 )
 from datasets import load_dataset
 import torch
+import os
+
+# Set memory allocation strategy
+os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
 
 def main():
     # Load model and tokenizer
-    model_id = "meta-llama/Llama-3.2-3b-instruct"  # The official Llama 3.2 instruct model
+    model_id = "meta-llama/Llama-3.2-3b-instruct"
     tokenizer = AutoTokenizer.from_pretrained(
         model_id,
-        token=True  # You'll need your HF token with Meta license
+        token=True
     )
     
     # Set up padding token
@@ -22,13 +26,19 @@ def main():
         model_id,
         torch_dtype=torch.float16,
         device_map="auto",
-        token=True  # You'll need your HF token with Meta license
+        token=True,
+        low_cpu_mem_usage=True
     )
+    
+    # Enable gradient checkpointing after model initialization
+    model.gradient_checkpointing_enable()
+    
     # Make sure the model knows about the padding token
     model.config.pad_token_id = tokenizer.pad_token_id
+    model.config.use_cache = False  # Disable KV-cache for training
 
     # Load the processed dataset
-    dataset = load_dataset("your-username/dolly-15k-llama3")  # Replace with your actual HF username
+    dataset = load_dataset("curtsmith/dolly-15k-llama3")
     
     # Tokenization function
     def tokenize_function(examples):
@@ -51,17 +61,20 @@ def main():
     training_args = TrainingArguments(
         output_dir="./results",
         num_train_epochs=3,
-        per_device_train_batch_size=4,
-        gradient_accumulation_steps=8,
+        per_device_train_batch_size=1,  # Reduced batch size
+        gradient_accumulation_steps=16,  # Increased gradient accumulation
         learning_rate=2e-5,
         weight_decay=0.01,
         warmup_steps=500,
         logging_steps=100,
         save_steps=1000,
         save_total_limit=3,
-        fp16=True,
+        bf16=True,
         push_to_hub=True,
-        hub_model_id="dolly-15k-llama3-ft"
+        hub_model_id="llama3.2-3b-dolly-15k",
+        gradient_checkpointing=True,  # Enable gradient checkpointing in training
+        optim="adamw_torch_fused",  # Use fused optimizer
+        max_grad_norm=0.3,  # Gradient clipping
     )
 
     # Initialize trainer
