@@ -79,11 +79,3 @@ llama-ft/
 ├── requirements.txt
 └── README.md
 ```
-
-## License
-
-MIT License
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
