@@ -3,7 +3,8 @@ from transformers import (
     AutoTokenizer,
     TrainingArguments,
     Trainer,
-    DataCollatorForLanguageModeling
+    DataCollatorForLanguageModeling,
+    pipeline
 )
 from datasets import load_dataset
 import torch
@@ -45,7 +46,7 @@ def main():
         return tokenizer(
             examples["text"],
             truncation=True,
-            max_length=2048,
+            max_length=4096,
             padding=False,
             return_tensors=None,
         )
@@ -61,11 +62,12 @@ def main():
     training_args = TrainingArguments(
         output_dir="./results",
         num_train_epochs=3,
-        per_device_train_batch_size=1,  # Reduced batch size
+        per_device_train_batch_size=2,  # Reduced batch size
         gradient_accumulation_steps=16,  # Increased gradient accumulation
         learning_rate=2e-5,
-        weight_decay=0.01,
+        lr_scheduler_type="cosine",
         warmup_steps=500,
+        weight_decay=0.01,
         logging_steps=100,
         save_steps=1000,
         save_total_limit=3,
@@ -94,6 +96,12 @@ def main():
     # Push to Hub if specified in training arguments
     if training_args.push_to_hub:
         trainer.push_to_hub()
+
+    # Run text generation pipeline with our next model
+    prompt = "What is a large language model?"
+    pipe = pipeline(task="text-generation", model=model, tokenizer=tokenizer, max_length=200)
+    result = pipe(f"<s>[INST] {prompt} [/INST]")
+    print(result[0]['generated_text'])
 
 if __name__ == "__main__":
     main() 
