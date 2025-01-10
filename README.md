@@ -12,12 +12,17 @@ A streamlined repository for fine-tuning Llama 3 models for my own use. This pro
 ## Installation
 
 ```bash
-git clone https://github.com/yourusername/llama-ft.git && cd llama-ft
+git clone https://github.com/plippmann/llama-ft.git && cd llama-ft
 pip install -r requirements.txt
 ```
 Make sure to set the HF_TOKEN environment variable.
 
 ## Usage
+
+Don't forget to set your HuggingFace token:
+```bash
+export HF_TOKEN="your_token"
+```
 
 ### 1. Data Preprocessing
 
